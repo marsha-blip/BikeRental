@@ -1,11 +1,11 @@
-from sqlalchemy import Column, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-
-Base = declarative_base()
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column,Integer, String
+from models.Base import Base
 
 class Bike(Base):
     
-    _tablename_ = 'bikes'
+    __tablename__ = 'bikes'
 
     id = Column(Integer, primary_key=True)
     serial_number = Column(String, nullable=False, unique=True)

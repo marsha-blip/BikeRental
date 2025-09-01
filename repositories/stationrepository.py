@@ -1,28 +1,38 @@
-from models.station import Station
+from sqlalchemy.orm import Session
+from models.station import Station 
 
 class StationRepository:
-    def _init_(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
-    def add(self, name, location):
-        """Add a new station to the database."""
-        station = Station(name=name, location=location)
-        self.session.add(station)
+    def add(self, name: str, location: str) -> Station:
+        """Add a new station record to the database."""
+        new = Station(name=name, location=location)
+        self.session.add(new)
         self.session.commit()
+        return new
+
+    def get_by_id(self, station_id: int) -> Station:
+        """Retrieve a station record by its ID."""
+        return self.session.query(station).filter_by(id=station_id).first()
+
+    def update(self, station_id: int, **kwargs) -> Station:
+        """
+        Update specified fields of a station.
+        Example usage: repo.update(station_id, name="New Name").
+        """
+        Station = self.get_by_id(station_id)
+        if Station:
+            for field, value in kwargs.items():
+                if hasattr(station, field):
+                    setattr(station, field, value)
+            self.session.commit()
         return station
 
-    def get_by_id(self, station_id):
-        """Retrieve a station by ID."""
-        return self.session.query(Station).filter_by(id=station_id).first()
+    def delete(self, station_id: int) -> None:
+        """Delete a station record by its ID."""
+        Station = self.get_by_id(station_id)
+        if Station:
+            self.session.delete(Station)
+            self.session.commit()
 
-    def list_all(self):
-        """List all stations."""
-        return self.session.query(Station).all()
-
-    def delete(self, station_id):
-        """Delete a station by ID."""
-        station = self.get_by_id(station_id)
-        if not station:
-            raise ValueError("Station not found")
-        self.session.delete(station)
-        self.session.commit()

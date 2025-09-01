@@ -1,19 +1,23 @@
-from repositories.station_repository import StationRepository
+from repositories.stationrepository import StationRepository
+
 
 class StationService:
-    def _init_(self, session):
-        self.repository = StationRepository(session)
+    def __init__(self, session):
+        self.station_repository = StationRepository(session)
 
-    def add_station(self, name, location):
+    def add_station(self, name: str, location: str):
         """Add a new station."""
-        if not name or not location:
-            raise ValueError("Name and location cannot be empty")
-        return self.repository.add(name, location)
+        return self.station_repository.add(name, location)
 
-    def list_stations(self):
-        """List all stations."""
-        return self.repository.list_all()
+    def get_station(self, station_id: int):
+        """Retrieve a station by its ID."""
+        return self.station_repository.get_by_id(station_id)
 
-    def delete_station(self, station_id):
-        """Delete a station."""
-        return self.repository.delete(station_id)
+    def update_station(self, station_id: int, **kwargs):
+        """Update specific attributes of a station."""
+        return self.station_repository.update(station_id, **kwargs)
+
+    def delete_station(self, station_id: int):
+        """Remove a station from the system."""
+        self.station_repository.delete(station_id)
+

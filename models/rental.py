@@ -1,12 +1,11 @@
 from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-
-Base = declarative_base()
+from models.Base import Base
 
 class Rental(Base):
     
-    _tablename_ = 'rentals'
+    __tablename__ = 'rentals'
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'), nullable=False)

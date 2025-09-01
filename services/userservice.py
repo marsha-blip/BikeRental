@@ -1,19 +1,21 @@
 from repositories.userrepository import UserRepository
 
 class UserService:
-    def _init_(self, session):
-        self.repository = UserRepository(session)
+    def __init__(self, session):
+        self.user_repository = UserRepository(session)
 
-    def register_user(self, name, email):
-        """Register a new user."""
-        if not name or not email:
-            raise ValueError("Name and email cannot be empty")
-        return self.repository.add(name, email)
+    def add_user(self, username: str, email: str):
+        """Add a new user."""
+        return self.user_repository.add(username, email)
 
-    def list_all_users(self):
-        """List all users."""
-        return self.repository.list_all()
+    def get_user(self, user_id: int):
+        """Retrieve a user by ID."""
+        return self.user_repository.get_by_id(user_id)
 
-    def delete_user(self, user_id):
+    def update_user(self, user_id: int, **kwargs):
+        """Update user information."""
+        return self.user_repository.update(user_id, **kwargs)
+
+    def delete_user(self, user_id: int):
         """Delete a user."""
-        return self.repository.delete(user_id)
+        self.user_repository.delete(user_id)

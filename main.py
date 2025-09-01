@@ -1,154 +1,123 @@
+# main.py
+import sys
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from services.userservice import UserService
+from models import bike, user, station, rental
 from services.bikeservice import BikeService
-from services.rentalservice import RentalService
 from services.stationservice import StationService
+from services.userservice import UserService
+from services.rentalservice import RentalService
+from models.Base import Base
 
-def validate_int_input(prompt):
-    """Helper function to validate integer input."""
-    while True:
-        try:
-            value = input(prompt).strip()
-            return int(value)
-        except ValueError:
-            print("Please enter a valid number.")
+DATABASE_URL = 'sqlite:///bike_rental.db'
+
+def setup_db():
+    engine = create_engine(DATABASE_URL, echo=True)
+    Base.metadata.create_all(bind=engine)
+    return sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def print_menu():
+    print("\n=== Bike Rental System CLI ===")
+    print("1. Add Bike")
+    print("2. Delete Bike")
+    print("3. Add Station")
+    print("4. Delete Station")
+    print("5. Add User")
+    print("6. Delete User")
+    print("7. Start Rental")
+    print("8. End Rental")
+    print("9. Exit")
 
 def main():
-    print("=== Bike Hire System ===")
-
-    # Initialize SQLAlchemy session
-    engine = create_engine('sqlite:///bike_rental.db', echo=False)
-    Session = sessionmaker(bind=engine)
-    session = Session()
-
-    # Initialize service instances
-    try:
-        user_service = UserService(session)
-        bike_service = BikeService(session)
-        rental_service = RentalService(session)
-        station_service = StationService(session)
-    except Exception as e:
-        print(f"Error initializing services: {e}")
-        session.close()
-        return
+    SessionLocal = setup_db()
+    session = SessionLocal()
+    bike_svc = BikeService(session)
+    station_svc = StationService(session)
+    user_svc = UserService(session)
+    rental_svc = RentalService(session)
 
     while True:
-        print("\nWhat would you like to do?")
-        print("1. Add Bike")
-        print("2. Register User")
-        print("3. Rent Bike")
-        print("4. Return Bike")
-        print("5. List All Rentals")
-        print("6. Add Station")
-        print("7. List Stations")
-        print("8. Delete Bike")
-        print("9. List All Users")
-        print("10. Delete User")
-        print("11. Delete Station")
-        print("12. Exit")
-
+        print_menu()
         choice = input("Enter choice number: ").strip()
 
-        try:
-            if choice == "1":
-                serial = input("Bike Serial Number: ").strip()
-                model = input("Bike Model: ").strip()
-                if not serial or not model:
-                    print("Serial number and model cannot be empty.")
-                    continue
-                bike = bike_service.add_bike(serial, model)
-                print(bike.print_bike_details())
-
-            elif choice == "2":
-                name = input("User Name: ").strip()
-                email = input("User Email: ").strip()
-                if not name or not email:
-                    print("Name and email cannot be empty.")
-                    continue
-                new_user = user_service.register_user(name, email)
-                print(f"User {new_user.name} registered successfully – ID {new_user.id}, "
-                      f"Email {new_user.email}, Registered at {new_user.register_at}")
-
-            elif choice == "3":
-                user_id = validate_int_input("User ID renting the bike: ")
-                bike_id = validate_int_input("Bike ID to rent: ")
-                rental = rental_service.rent_bike(user_id, bike_id)
-                print(f"Rental started – ID {rental.id}, User {rental.user_id}, Bike {rental.bike_id}")
-
-            elif choice == "4":
-                rental_id = validate_int_input("Rental ID to close: ")
-                closed = rental_service.close_rental(rental_id)
-                print(f"Rental closed – Fee: {closed.fee_cents / 100:.2f}")
-
-            elif choice == "5":
-                rentals = rental_service.list_all_rentals()
-                if not rentals:
-                    print("No rentals found.")
-                else:
-                    for r in rentals:
-                        print(f"ID {r.id}, User {r.user_id}, Bike {r.bike_id}, "
-                              f"Start: {r.start_time}, End: {r.end_time or 'Active'}, "
-                              f"Fee: {(r.fee_cents / 100) if r.fee_cents else 0:.2f}")
-
-            elif choice == "6":
-                name = input("Station Name: ").strip()
-                location = input("Station Location: ").strip()
-                if not name or not location:
-                    print("Name and location cannot be empty.")
-                    continue
-                station = station_service.add_station(name, location)
-                print(f"Station added – ID {station.id}, Name {station.name}, Location {station.location}")
-
-            elif choice == "7":
-                stations = station_service.list_stations()
-                if not stations:
-                    print("No stations found.")
-                else:
-                    for s in stations:
-                        print(f"ID {s.id}, Name {s.name}, Location {s.location}")
-
-            elif choice == "8":
-                bike_id = validate_int_input("Bike ID to delete: ")
-                bike_service.delete_bike(bike_id)
-                print(f"Bike with ID {bike_id} deleted successfully.")
-
-            elif choice == "9":
-                users = user_service.list_all_users()
-                if not users:
-                    print("No users found.")
-                else:
-                    for user in users:
-                        print(f"User: {user.name}, Email: {user.email}, ID: {user.id}, "
-                              f"Registered at {user.register_at}")
-
-            elif choice == "10":
-                user_id = validate_int_input("User ID to delete: ")
-                user_service.delete_user(user_id)
-                print(f"User with ID {user_id} deleted successfully.")
-
-            elif choice == "11":
-                station_id = validate_int_input("Station ID to delete: ")
-                station_service.delete_station(station_id)
-                print(f"Station with ID {station_id} deleted successfully.")
-
-            elif choice == "12":
-                print("Goodbye!")
-                break
-
+        if choice == '1':
+            serial = input("Bike Serial Number: ").strip()
+            model = input("Bike Model: ").strip()
+            if serial and model:
+                bike = bike_svc.add_bike(serial, model)
+                print(f"Added Bike – ID: {bike.id}, Serial: {bike.serial_number}, Model: {bike.model}")
             else:
-                print("Invalid option. Please select a number from 1 to 12.")
+                print("Both serial number and model are required.")
 
-        except ValueError as ve:
-            print(f"Input error: {ve}")
-        except Exception as e:
-            print(f"An error occurred: {e}")
+        elif choice == '2':
+            bike_id = input("Bike ID to delete: ").strip()
+            if bike_id.isdigit():
+                bike_svc.delete_bike(int(bike_id))
+                print(f"Bike ID {bike_id} deleted (if existed).")
+            else:
+                print("Invalid ID entered.")
 
-        finally:
-            # Commit session after each operation to ensure data consistency
-            session.commit()
+        elif choice == '3':
+            name = input("Station Name: ").strip()
+            location = input("Station Location: ").strip()
+            if name and location:
+                station = station_svc.add_station(name, location)
+                print(f"Added Station – ID: {station.id}, Name: {station.name}, Location: {station.location}")
+            else:
+                print("Station name and location are required.")
 
-    # Close session when exiting
+        elif choice == '4':
+            station_id = input("Station ID to delete: ").strip()
+            if station_id.isdigit():
+                station_svc.delete_station(int(station_id))
+                print(f"Station ID {station_id} deleted (if existed).")
+            else:
+                print("Invalid ID entered.")
+
+        elif choice == '5':
+            username = input("Username: ").strip()
+            email = input("Email: ").strip()
+            if username and email:
+                user = user_svc.add_user(username, email)
+                print(f"Added User – ID: {user.id}, Username: {user.username}, Email: {user.email}")
+            else:
+                print("Both username and email are required.")
+
+        elif choice == '6':
+            user_id = input("User ID to delete: ").strip()
+            if user_id.isdigit():
+                user_svc.delete_user(int(user_id))
+                print(f"User ID {user_id} deleted (if existed).")
+            else:
+                print("Invalid ID entered.")
+
+        elif choice == '7':
+            bike_id = input("Bike ID: ").strip()
+            user_id = input("User ID: ").strip()
+            station_id = input("Station ID: ").strip()
+            if bike_id.isdigit() and user_id.isdigit() and station_id.isdigit():
+                rental = rental_svc.add_rental(int(bike_id), int(user_id), int(station_id))
+                print(f"Rental started – ID: {rental.id}, Bike: {rental.bike_id}, User: {rental.user_id}, Station: {rental.station_id}")
+            else:
+                print("All IDs must be valid numbers.")
+
+        elif choice == '8':
+            rental_id = input("Rental ID to end: ").strip()
+            if rental_id.isdigit():
+                rental_svc.end_rental(int(rental_id))
+                print(f"Rental ID {rental_id} ended (if active).")
+            else:
+                print("Invalid ID entered.")
+
+        elif choice == '9':
+            print("Exiting application. Goodbye!")
+            break
+
+        else:
+            print("Invalid option. Please choose a valid number.")
+
+        session.commit()  # Ensure changes are persisted
+
     session.close()
 
 if __name__ == "__main__":

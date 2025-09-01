@@ -1,33 +1,37 @@
-from sqlalchemy.exc import IntegrityError
-from models.user import User
+from sqlalchemy.orm import Session
+from models.user import User  
 
 class UserRepository:
-    def _init_(self, session):
+    def __init__(self, session: Session):
         self.session = session
 
-    def add(self, name, email):
-        """Add a new user to the database."""
-        try:
-            user = User(name=name, email=email)
-            self.session.add(user)
-            self.session.commit()
-            return user
-        except IntegrityError:
-            self.session.rollback()
-            raise ValueError("Email already exists")
-
-    def get_by_id(self, user_id):
-        """Retrieve a user by ID."""
-        return self.session.query(User).filter_by(id=user_id).first()
-
-    def list_all(self):
-        """List all users."""
-        return self.session.query(User).all()
-
-    def delete(self, user_id):
-        """Delete a user by ID."""
-        user = self.get_by_id(user_id)
-        if not user:
-            raise ValueError("User not found")
-        self.session.delete(user)
+    def add(self, username: str, email: str) -> User:
+        """Add a new user record to the database."""
+        new_user = User(username=username, email=email)
+        self.session.add(new_user)
         self.session.commit()
+        return new_user
+
+    def get_by_id(self, user_id: int) -> User:
+        """Retrieve a user record by its ID."""
+        return self.session.query(user).filter_by(id=user_id).first()
+
+    def update(self, user_id: int, **kwargs) -> User:
+        """
+        Update specified fields of a user.
+        Example usage: repo.update(user_id, email="new@example.com")
+        """
+        User = self.get_by_id(user_id)
+        if User:
+            for field, value in kwargs.items():
+                if hasattr(User, field):
+                    setattr(User, field, value)
+            self.session.commit()
+        return User
+
+    def delete(self, user_id: int) -> None:
+        """Delete a user record by its ID."""
+        User = self.get_by_id(user_id)
+        if User:
+            self.session.delete(User)
+            self.session.commit()
