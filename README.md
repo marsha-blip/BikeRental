@@ -122,7 +122,6 @@ Contributions are welcome! Please:
 
 This project is open source and available under the MIT License
 
-
  ## Author
  ## MaryItumo
 
